@@ -8,11 +8,15 @@ file_list = []
 
 nvdla_version = "nv_small"
 
-# 当前目录应该存在nvdla的踪迹测试
-for current, dirs, files in os.walk(os.path.join("./", nvdla_version)):
+print("Current Directory: "+ os.path.abspath("."))
+
+# 当前目录(指项目目录，VS Code打开时会用此目录作为当前目录)下data应该存在nvdla的踪迹测试
+for current, dirs, files in os.walk(os.path.join("data", nvdla_version)):
     file_list.extend([*map(lambda name: os.path.join(current, name), files)])
 
-generated_c_file = open("mem_dat.c.generated", "w+")
+assert len(file_list) > 0, "文件列表为空，当前目录应该存在nvdla的踪迹测试！"
+
+generated_c_file = open("mem_dat.generated.c", "w+")
 
 for name in file_list:
     if (name.endswith(".dat")):
