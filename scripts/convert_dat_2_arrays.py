@@ -25,7 +25,7 @@ for name in file_list:
         content = file.read()
         file.close();
         
-        write_file = open(name + ".generated.c", "w+")
+        write_file = open(name + ".c.generated", "w+")
         replace_content=re.sub(r'payload:((?:0[xX][0-9a-fA-F]{2}\s?)+(?=}))', brace_payload, content)
         
         write_file.write(f'static const struct mem_payload {parent_base_name}_{name_without_suffix}[] = \n' + replace_content + ';\n')
@@ -35,10 +35,10 @@ for name in file_list:
         f'#ifdef {parent_base_name} \n\n'
         f'#include "./{nvdla_version}/{base_name}.c.generated" \n\n'
 
-        f'if (strcmp(data_key, "{base_name}") == 0)\n'
+        f'if (strcmp(dat_key, "{base_name}") == 0)\n'
         f'    {{\n'
-        f'        int length  = sizeof({name_without_suffix}) / sizeof(struct mem_payload); \n'
-        f'        mem_bulk = {name_without_suffix}; \n'
+        f'        length  = sizeof({parent_base_name}_{name_without_suffix}) / sizeof(struct mem_payload); \n'
+        f'        mem_bulk = {parent_base_name}_{name_without_suffix}; \n'
         f'    }} \n'
         f'#endif\n\n'
         )

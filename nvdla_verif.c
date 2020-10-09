@@ -3,10 +3,45 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include "nvdla_registers.h"
+
+/**
+ * 启用测试相关的宏开头
+ * 这会影响相关的数据是否被编译进代码。
+ **/
+
+#define pdp_8x9x19_3x3_ave_int8_0 1
+
+
+/**
+ * 启用测试相关的宏结尾
+ * 
+ **/
+
+/**
+ * 必须放在测试相关的宏定义下面！
+ **/
+#include "mem_dat.generated.c"
+
+
+static void dealy_1k_clocks();
 
 int reg_write(unsigned int *reg_addr, unsigned int value)
 {
     fprintf(stdout, "Write value %X into addr %p.\n", value, reg_addr); 
+
+// TODO 加上别的模块的地址寄存器。
+    switch (reg_addr)
+    {
+        case NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0:
+        case NVDLA_PDP.D_DST_BASE_ADDR_LOW_0:
+            value += NVDLA_DDR_BASE_OFFSET;
+            fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual written value was adjusted to %d", value); 
+
+            break;
+        default:
+            break;
+    }
 
     *reg_addr = value;
 
@@ -28,14 +63,23 @@ int reg_write(unsigned int *reg_addr, unsigned int value)
  **/
 int intr_notify(int module, int sync_id)
 {
-
-    while (1)
+	unsigned int last = *(NVDLA_GLB.S_INTR_STATUS_0);
+    while (*NVDLA_GLB.S_INTR_STATUS_0 == last)
     {
-
+        dealy_1k_clocks();
+    	printf(".\nS_INTR_STATUS_0=%x, last=%x", *NVDLA_GLB.S_INTR_STATUS_0, last);
     }
+
+    // TODO 清除中断状态。
 
     ret_ok
 
+}
+
+void dealy_1k_clocks()
+{
+    int i = 1000;
+    while (i--);
 }
 
 /**
@@ -111,7 +155,7 @@ int check_crc(int sync_id, int mem_type, unsigned int base_addr, unsigned int si
                                                 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,
                                                 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d};
 
-    unsigned int *addr = (unsigned int *)base_addr;
+    unsigned int *addr = (unsigned int *)(base_addr + NVDLA_DDR_BASE_OFFSET);
     int unsigned result = ~0;
     int i = 0;
 
@@ -122,6 +166,9 @@ int check_crc(int sync_id, int mem_type, unsigned int base_addr, unsigned int si
         fprintf(stderr, "CRC/CALC" "length (%0d) is not multiple of 4", size);
 
     fprintf(stdout, "MEM/CRC" "Calculate CRC32 of memory range [%#p:%#p]", base_addr, base_addr + size);
+
+    fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual source addr was adjusted to %d", addr); 
+
     
     while (size >= 4) 
     {
@@ -131,11 +178,18 @@ int check_crc(int sync_id, int mem_type, unsigned int base_addr, unsigned int si
             unsigned char b = (d>>i) & 0xff;
             result = (result>>8) ^ crc32_table[((unsigned char)result)^b];
         }
-        addr += 4;
+        addr += 1;
         size -= 4;
     }
     
-    return ~result == expected;
+    i = ((~result) == expected);
+
+    fprintf(stdout, "The calculated result CRC is %X, while the golden result is %X. ", (~result), expected); 
+
+
+    assert (i != 0);
+
+    return i;
 
 }
 
@@ -148,6 +202,11 @@ int mem_init(int mem_type, unsigned int base_addr, unsigned int size, enum MEM_F
     int i = 0;
 
     assert(((unsigned int)base_addr % 4) == 0);
+
+    fprintf(stdout, "Initialize mem region [%X-%X]", base_addr, base_addr + size); 
+
+    fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual dest addr was adjusted to %d", uint_addr); 
+
 
     if (fill_type == ALL_ZERO)
     {
@@ -191,12 +250,19 @@ int mem_load(int mem_type, unsigned int base_addr, const char *dat_key)
 {
     const struct mem_payload *mem_bulk = NULL;
     int length = 0;
-    
-#include "mem_dat.c.generated"
+
+    fprintf(stdout, "Load mem dat from %s to %X", dat_key, base_addr); 
+
 
     if (mem_bulk != NULL && length != 0)
     {
+        fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual dest addr was adjusted to %d", base_addr + NVDLA_DDR_BASE_OFFSET); 
+
         copy_bulk(base_addr + NVDLA_DDR_BASE_OFFSET, mem_bulk, length);
+    }
+    else
+    {
+    	printf("mem dat %s not found! ", dat_key);
     }
 
     ret_ok
