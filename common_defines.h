@@ -5,6 +5,28 @@
 
 #define ret_ok return 0;
 
+#define pri_mem (1)
+
+// 顺序就是模块在nvdla_glb_s_intr_status_0_out寄存器中对应中断位的序号。
+// 寄存器在glb/NV_NVDLA_GLB_ic.v被写入。
+// assign nvdla_glb_s_intr_status_0_out[31:0] = { 10'b0, cacc_done_status1, cacc_done_status0, cdma_wt_done_status1, cdma_wt_done_status0, cdma_dat_done_status1, cdma_dat_done_status0, 6'b0, rubik_done_status1, rubik_done_status0, bdma_done_status1, bdma_done_status0, pdp_done_status1, pdp_done_status0, cdp_done_status1, cdp_done_status0, sdp_done_status1, sdp_done_status0 };
+
+#define SDP_0 (0)
+#define SDP_1 (1)
+#define CDP_0 (2)
+#define CDP_1 (3)
+#define PDP_0 (4)
+#define PDP_1 (5)
+
+#define CDMA_DAT_0 (10)
+#define CDMA_DAT_1 (11)
+#define CDMA_WT_0 (12)
+#define CDMA_WT_1 (13)
+#define CACC_0 (14)
+#define CACC_1 (15)
+
+#define sync_id_0 (0)
+
 /**
  * NVDLA CSB配置寄存器的起始地址。
  **/

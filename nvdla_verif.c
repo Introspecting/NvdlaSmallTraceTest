@@ -5,39 +5,53 @@
 #include <stdio.h>
 #include "nvdla_registers.h"
 
-/**
- * 启用测试相关的宏开头
- * 这会影响相关的数据是否被编译进代码。
- **/
+
+// 启用测试相关的宏开头
+// 这会影响所需的输入和权值是否被编译进代码。
 
 #define pdp_8x9x19_3x3_ave_int8_0 1
 
-
-/**
- * 启用测试相关的宏结尾
- * 
- **/
+// 启用测试相关的宏结尾
 
 /**
  * 必须放在测试相关的宏定义下面！
  **/
+
 #include "mem_dat.generated.c"
 
+#define check_written_reg(reg_addr, value) do \
+    {       \
+        unsigned int read_value = *reg_addr; \
+ \
+        if (read_value != value) \
+        { \
+            fprintf(stderr, "Warning: the value of register %s doesn't match given value!\n", ""); \
+            ret_err; \
+        } \
+    } while (0);
 
 static void dealy_1k_clocks();
+
+static int clear_intr_status(int module);
 
 int reg_write(unsigned int *reg_addr, unsigned int value)
 {
     fprintf(stdout, "Write value %X into addr %p.\n", value, reg_addr); 
 
-// TODO 加上别的模块的地址寄存器。
+// 纠正和DDR相关的地址寄存器，加上NVDLA_DDR_BASE_OFFSET。因为这是NVDLA IP使用的地址，所以没有办法在运行时校正，如果不修改配置文件的话只能放在这里。
     switch (reg_addr)
     {
+        case NVDLA_SDP.D_SRC_BASE_ADDR_LOW_0:
+        case NVDLA_SDP.D_DST_BASE_ADDR_LOW_0:
+        case NVDLA_CDP.D_SRC_BASE_ADDR_LOW_0:
+        case NVDLA_CDP.D_DST_BASE_ADDR_LOW_0:
         case NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0:
         case NVDLA_PDP.D_DST_BASE_ADDR_LOW_0:
+        case NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0:
+        case NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0:
+        case NVDLA_PDP_RDMA.D_SRC_BASE_ADDR_LOW_0:
             value += NVDLA_DDR_BASE_OFFSET;
             fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual written value was adjusted to %d", value); 
-
             break;
         default:
             break;
@@ -45,16 +59,23 @@ int reg_write(unsigned int *reg_addr, unsigned int value)
 
     *reg_addr = value;
 
-    unsigned int read_value = *reg_addr;
-
-    if (read_value != value)
-    {
-        fprintf(stderr, "Warning: the value of register %s doesn't match given value!\n", ""); 
-
-        ret_err;
-    }
+    check_written_reg(reg_addr, value)
 
     ret_ok
+}
+
+int clear_intr_status(int module)
+{
+    unsigned int old = *(NVDLA_GLB.S_INTR_STATUS_0);
+
+    assert(module < 32);
+
+    old &= ~(1 << module);
+
+// TODO module name
+    fprintf(stdout, "Clear interrupt bit for module %s(%d)", "", module); 
+
+    return reg_write(NVDLA_GLB.S_INTR_STATUS_0, old);
 }
 
 /**
@@ -63,17 +84,18 @@ int reg_write(unsigned int *reg_addr, unsigned int value)
  **/
 int intr_notify(int module, int sync_id)
 {
-	unsigned int last = *(NVDLA_GLB.S_INTR_STATUS_0);
+	unsigned int old = *(NVDLA_GLB.S_INTR_STATUS_0);
+
     while (*NVDLA_GLB.S_INTR_STATUS_0 == last)
     {
         dealy_1k_clocks();
-    	printf(".\nS_INTR_STATUS_0=%x, last=%x", *NVDLA_GLB.S_INTR_STATUS_0, last);
+    	printf(".\nS_INTR_STATUS_0=%x, old=%x", *NVDLA_GLB.S_INTR_STATUS_0, old);
     }
 
-    // TODO 清除中断状态。
+    // 默认会清除中断结果，以免影响后续进程。
+    clear_intr_status(module);
 
     ret_ok
-
 }
 
 void dealy_1k_clocks()

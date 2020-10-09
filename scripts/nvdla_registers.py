@@ -8,11 +8,6 @@ declaration_file.write('#ifndef NVDLA_REGISTERS_HEADER \n#define NVDLA_REGISTERS
 
 declaration_file.write('#include "common_defines.h"\n\n')
 
-
-declaration_file.write("#define pri_mem (1) \n")
-declaration_file.write("#define PDP_0 (0) \n")
-declaration_file.write("#define sync_id_0 (0) \n\n")
-
 declaration_file.write("// NVDLA 各个模块的寄存器地址声明\n")
 
 

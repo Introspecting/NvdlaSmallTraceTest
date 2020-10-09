@@ -37,7 +37,7 @@ for name in file_list:
     
         generated_c_file.write(
         f'#ifdef {parent_base_name} \n\n'
-        f'#include "./{nvdla_version}/{base_name}.c.generated" \n\n'
+        f'#include "./{nvdla_version}/{parent_base_name}/{base_name}.c.generated" \n\n'
 
         f'if (strcmp(dat_key, "{base_name}") == 0)\n'
         f'    {{\n'
