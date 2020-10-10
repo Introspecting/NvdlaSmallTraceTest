@@ -13,12 +13,6 @@
 
 // 启用测试相关的宏结尾
 
-/**
- * 必须放在测试相关的宏定义下面！
- **/
-
-#include "mem_dat.generated.c"
-
 #define check_written_reg(reg_addr, value) do \
     {       \
         unsigned int read_value = *reg_addr; \
@@ -39,22 +33,15 @@ int reg_write(unsigned int *reg_addr, unsigned int value)
     fprintf(stdout, "Write value %X into addr %p.\n", value, reg_addr); 
 
 // 纠正和DDR相关的地址寄存器，加上NVDLA_DDR_BASE_OFFSET。因为这是NVDLA IP使用的地址，所以没有办法在运行时校正，如果不修改配置文件的话只能放在这里。
-    switch (reg_addr)
+    if (reg_addr == NVDLA_SDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_SDP.D_DST_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_CDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_CDP.D_DST_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_PDP.D_DST_BASE_ADDR_LOW_0 ||
+        reg_addr == NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_PDP_RDMA.D_SRC_BASE_ADDR_LOW_0)
     {
-        case NVDLA_SDP.D_SRC_BASE_ADDR_LOW_0:
-        case NVDLA_SDP.D_DST_BASE_ADDR_LOW_0:
-        case NVDLA_CDP.D_SRC_BASE_ADDR_LOW_0:
-        case NVDLA_CDP.D_DST_BASE_ADDR_LOW_0:
-        case NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0:
-        case NVDLA_PDP.D_DST_BASE_ADDR_LOW_0:
-        case NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0:
-        case NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0:
-        case NVDLA_PDP_RDMA.D_SRC_BASE_ADDR_LOW_0:
-            value += NVDLA_DDR_BASE_OFFSET;
-            fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual written value was adjusted to %d", value); 
-            break;
-        default:
-            break;
+
+        value += NVDLA_DDR_BASE_OFFSET;
+        fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual written value was adjusted to %d", value); 
     }
 
     *reg_addr = value;
@@ -86,7 +73,7 @@ int intr_notify(int module, int sync_id)
 {
 	unsigned int old = *(NVDLA_GLB.S_INTR_STATUS_0);
 
-    while (*NVDLA_GLB.S_INTR_STATUS_0 == last)
+    while (*NVDLA_GLB.S_INTR_STATUS_0 == old)
     {
         dealy_1k_clocks();
     	printf(".\nS_INTR_STATUS_0=%x, old=%x", *NVDLA_GLB.S_INTR_STATUS_0, old);
@@ -272,6 +259,12 @@ int mem_load(int mem_type, unsigned int base_addr, const char *dat_key)
 {
     const struct mem_payload *mem_bulk = NULL;
     int length = 0;
+
+/**
+ * 必须放在测试相关的宏定义下面以及mem_load函数体里！
+ **/
+
+#include "mem_dat.generated.c"
 
     fprintf(stdout, "Load mem dat from %s to %X", dat_key, base_addr); 
 

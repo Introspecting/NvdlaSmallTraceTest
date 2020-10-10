@@ -39,7 +39,7 @@ for name in file_list:
         f'#ifdef {parent_base_name} \n\n'
         f'#include "./{nvdla_version}/{parent_base_name}/{base_name}.c.generated" \n\n'
 
-        f'if (strcmp(dat_key, "{base_name}") == 0)\n'
+        f'    if (strcmp(dat_key, "{base_name}") == 0)\n'
         f'    {{\n'
         f'        length  = sizeof({parent_base_name}_{name_without_suffix}) / sizeof(struct mem_payload); \n'
         f'        mem_bulk = {parent_base_name}_{name_without_suffix}; \n'
