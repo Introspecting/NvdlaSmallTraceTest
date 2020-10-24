@@ -59,7 +59,7 @@ int clear_intr_status(int module)
 
     assert(module < 32);
 
-    old &= ~(1 << module);
+    old |= (1 << module);
 
 // TODO module name
     fprintf(stdout, "Clear interrupt bit for module %s(%d)", "", module); 
