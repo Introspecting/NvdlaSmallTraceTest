@@ -33,10 +33,12 @@ int reg_write(unsigned int *reg_addr, unsigned int value)
     fprintf(stdout, "Write value %X into addr %p.\n", value, reg_addr); 
 
 // 纠正和DDR相关的地址寄存器，加上NVDLA_DDR_BASE_OFFSET。因为这是NVDLA IP使用的地址，所以没有办法在运行时校正，如果不修改配置文件的话只能放在这里。
-    if (reg_addr == NVDLA_SDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_SDP.D_DST_BASE_ADDR_LOW_0 || 
-        reg_addr == NVDLA_CDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_CDP.D_DST_BASE_ADDR_LOW_0 || 
-        reg_addr == NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_PDP.D_DST_BASE_ADDR_LOW_0 ||
-        reg_addr == NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
+    if (reg_addr == NVDLA_SDP.D_DST_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_CDP.D_DST_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_PDP.D_DST_BASE_ADDR_LOW_0 ||
+        reg_addr == NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
+        reg_addr == NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
         reg_addr == NVDLA_PDP_RDMA.D_SRC_BASE_ADDR_LOW_0)
     {
 
