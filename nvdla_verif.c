@@ -9,7 +9,7 @@
 // 启用测试相关的宏开头
 // 这会影响所需的输入和权值是否被编译进代码。
 
-#define pdp_8x9x19_3x3_ave_int8_0 1
+#define cdp_8x8x64_lrn3_int8_0 1
 
 // 启用测试相关的宏结尾
 
@@ -33,17 +33,15 @@ int reg_write(unsigned int *reg_addr, unsigned int value)
     fprintf(stdout, "Write value %X into addr %p.\n", value, reg_addr); 
 
 // 纠正和DDR相关的地址寄存器，加上NVDLA_DDR_BASE_OFFSET。因为这是NVDLA IP使用的地址，所以没有办法在运行时校正，如果不修改配置文件的话只能放在这里。
-    if (reg_addr == NVDLA_SDP.D_DST_BASE_ADDR_LOW_0 || 
-        reg_addr == NVDLA_CDP.D_DST_BASE_ADDR_LOW_0 || 
-        reg_addr == NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0 || 
-        reg_addr == NVDLA_PDP.D_DST_BASE_ADDR_LOW_0 ||
-        reg_addr == NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
-        reg_addr == NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
+    if (reg_addr == NVDLA_SDP.D_DST_BASE_ADDR_LOW_0 ||
+        reg_addr == NVDLA_CDP.D_DST_BASE_ADDR_LOW_0 ||
+        reg_addr == NVDLA_PDP.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_PDP.D_DST_BASE_ADDR_LOW_0 ||
+        reg_addr == NVDLA_SDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || reg_addr == NVDLA_CDP_RDMA.D_SRC_BASE_ADDR_LOW_0 || 
         reg_addr == NVDLA_PDP_RDMA.D_SRC_BASE_ADDR_LOW_0)
     {
 
         value += NVDLA_DDR_BASE_OFFSET;
-        fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual written value was adjusted to %d", value); 
+        fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual written value was adjusted to %d\n", value);
     }
 
     *reg_addr = value;
@@ -59,10 +57,10 @@ int clear_intr_status(int module)
 
     assert(module < 32);
 
-    old |= (1 << module);
+    old &= ~(1 << module);
 
 // TODO module name
-    fprintf(stdout, "Clear interrupt bit for module %s(%d)", "", module); 
+    fprintf(stdout, "Clear interrupt bit for module %s(%d)\n", "", module);
 
     return reg_write(NVDLA_GLB.S_INTR_STATUS_0, old);
 }
@@ -78,7 +76,7 @@ int intr_notify(int module, int sync_id)
     while (*NVDLA_GLB.S_INTR_STATUS_0 == old)
     {
         dealy_1k_clocks();
-    	printf(".\nS_INTR_STATUS_0=%x, old=%x", *NVDLA_GLB.S_INTR_STATUS_0, old);
+    	printf(".\nS_INTR_STATUS_0=%x, old=%x\n", *NVDLA_GLB.S_INTR_STATUS_0, old);
     }
 
     // 默认会清除中断结果，以免影响后续进程。
@@ -171,14 +169,14 @@ int check_crc(int sync_id, int mem_type, unsigned int base_addr, unsigned int si
     int i = 0;
 
     if (0 != ((unsigned int)base_addr % 4))
-        fprintf(stderr, "CRC/CALC" "base (%p) is not multiple of 4", base_addr);
+        fprintf(stderr, "CRC/CALC" "base (%p) is not multiple of 4\n", base_addr);
 
     if (0 != size % 4)
-        fprintf(stderr, "CRC/CALC" "length (%0d) is not multiple of 4", size);
+        fprintf(stderr, "CRC/CALC" "length (%0d) is not multiple of 4\n", size);
 
-    fprintf(stdout, "MEM/CRC" "Calculate CRC32 of memory range [%#p:%#p]", base_addr, base_addr + size);
+    fprintf(stdout, "MEM/CRC" "Calculate CRC32 of memory range [%#p:%#p]\n", base_addr, base_addr + size);
 
-    fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual source addr was adjusted to %d", addr); 
+    fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual source addr was adjusted to %d\n", addr);
 
     
     while (size >= 4) 
@@ -195,7 +193,7 @@ int check_crc(int sync_id, int mem_type, unsigned int base_addr, unsigned int si
     
     i = ((~result) == expected);
 
-    fprintf(stdout, "The calculated result CRC is %X, while the golden result is %X. ", (~result), expected); 
+    fprintf(stdout, "The calculated result CRC is %X, while the golden result is %X. \n", (~result), expected);
 
 
     assert (i != 0);
@@ -214,9 +212,9 @@ int mem_init(int mem_type, unsigned int base_addr, unsigned int size, enum MEM_F
 
     assert(((unsigned int)base_addr % 4) == 0);
 
-    fprintf(stdout, "Initialize mem region [%X-%X]", base_addr, base_addr + size); 
+    fprintf(stdout, "Initialize mem region [%X-%X]\n", base_addr, base_addr + size);
 
-    fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual dest addr was adjusted to %d", uint_addr); 
+    fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual dest addr was adjusted to %d\n", uint_addr);
 
 
     if (fill_type == ALL_ZERO)
@@ -268,12 +266,12 @@ int mem_load(int mem_type, unsigned int base_addr, const char *dat_key)
 
 #include "mem_dat.generated.c"
 
-    fprintf(stdout, "Load mem dat from %s to %X", dat_key, base_addr); 
+    fprintf(stdout, "Load mem dat from %s to %X\n", dat_key, base_addr);
 
 
     if (mem_bulk != NULL && length != 0)
     {
-        fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual dest addr was adjusted to %d", base_addr + NVDLA_DDR_BASE_OFFSET); 
+        fprintf(stdout, "Since NVDLA_DDR_BASE_OFFSET is not zero, the actual dest addr was adjusted to %d\n", base_addr + NVDLA_DDR_BASE_OFFSET);
 
         copy_bulk(base_addr + NVDLA_DDR_BASE_OFFSET, mem_bulk, length);
     }
@@ -285,5 +283,13 @@ int mem_load(int mem_type, unsigned int base_addr, const char *dat_key)
     ret_ok
 }
 
-
+int poll_reg_equal(unsigned int *reg_addr,unsigned int expected_value)
+{
+	unsigned int read_value = *reg_addr;
+	while(read_value!=expected_value)
+    {
+		read_value=*reg_addr;
+    }
+    return 0;
+}
 

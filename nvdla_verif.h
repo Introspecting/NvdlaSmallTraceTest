@@ -23,5 +23,7 @@ int mem_init(int mem_type, unsigned int base_addr, unsigned int size, enum MEM_F
 
 int mem_load(int mem_type, unsigned int base_addr, const char *dat_key);
 
+int poll_reg_equal(unsigned int *reg_addr,unsigned int expected_value);
+
 
 #endif
