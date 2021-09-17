@@ -1,12 +1,16 @@
 import os
 import re
 
+# 需要的参数
+# nvdla_version
+# 数据文件的目录
+
 def brace_payload(matched):
     return "payload:{ " + matched.group(1).replace(' ', ',') + " }"
 
 file_list = []
 
-nvdla_version = "nv_small"
+nvdla_version = "nv_small_256"
 
 print("Current Directory: "+ os.path.abspath("."))
 
